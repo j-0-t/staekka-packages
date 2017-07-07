@@ -1,0 +1,38 @@
+pkgname=staekka
+pkgver=.8.a4eb0cf
+pkgrel=1
+epoch=1
+pkgdesc='This plugin extends Metasploit for some missing features and modules allowing interaction with other/custom exploits/ways of getting shell access'
+url='https://github.com/j-0-t/staekka'
+arch=('i686' 'x86_64')
+depends=('metasploit'  'ruby-bundler' 'make'  'git' 'clang')
+options=('!strip' '!emptydirs')
+source=(${pkgname}::git+https://github.com/j-0-t/staekka.git)
+sha512sums=('SKIP')
+
+pkgver() {
+  cd ${pkgname}
+  printf "%s.%s.%s" \
+    "$(git tag -l|grep -P '.+\..+\.\d+'|sed -r 's|v?([0-9\.]+)(-.+)?|\1|g'|sort -V -r|head -n1)" \
+    "$(git rev-list --count HEAD)" \
+    "$(git rev-parse --short HEAD)"
+}
+
+
+build() {
+  cd ${pkgname}
+  export CC=clang
+  export CXX=clang++
+  bundle install -j"$(nproc)" --no-cache --deployment
+  find vendor/bundle/ruby -exec chmod o+r '{}' \;
+}
+
+package() {
+  cd ${pkgname}
+  mkdir -p "${pkgdir}/opt/${pkgname}"
+  mkdir -p "${pkgdir}/opt/metasploit/plugins/"
+  find . -maxdepth 1 -mindepth 1 -not -path './.git*' -exec cp -r '{}' "${pkgdir}/opt/${pkgname}" \;
+  cp "${pkgdir}"/opt/${pkgname}/plugins/*.rb "${pkgdir}"/opt/metasploit/plugins/
+}
+
+# vim: ts=2 sw=2 et:
